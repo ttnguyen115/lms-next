@@ -6,6 +6,7 @@ import express, {
     type Request,
     type Response,
 } from "express";
+import { ErrorMiddleware } from "./middleware/error";
 
 export const app = express();
 
@@ -30,3 +31,5 @@ app.all("*", (req: Request, res: Response, next: NextFunction) => {
     err["statusCode"] = 404;
     next(err);
 });
+
+app.use(ErrorMiddleware);
