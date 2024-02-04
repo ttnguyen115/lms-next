@@ -7,6 +7,7 @@ import express, {
     type Response,
 } from "express";
 import { ErrorMiddleware } from "./middleware/error";
+import { userRouter } from "./routes";
 
 export const app = express();
 
@@ -17,6 +18,9 @@ app.use(
         origin: process.env.ORIGIN,
     })
 );
+
+// Routes
+app.use("/api/v1", userRouter);
 
 // Checking API health
 app.get("/health", (req: Request, res: Response, next: NextFunction) => {
