@@ -7,6 +7,7 @@ import { CatchAsyncErrors } from "../middleware/catchAsyncErrors";
 import userModel, { IUser } from "../models/userModel";
 import ErrorHandler from "../utils/ErrorHandler";
 import { sendToken } from "../utils/jwt";
+import { redis } from "../utils/redis";
 import sendMail from "../utils/sendMail";
 
 interface IRegistrationBody {
@@ -142,6 +143,10 @@ export const logoutUser = CatchAsyncErrors(
         try {
             res.cookie("access_token", "", { maxAge: 1 });
             res.cookie("refresh_token", "", { maxAge: 1 });
+
+            const userId = req.user?._id || "";
+            redis.del(userId);
+
             res.status(200).json({
                 success: true,
                 message: "Logged out successfully",
