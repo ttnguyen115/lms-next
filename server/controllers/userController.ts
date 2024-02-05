@@ -5,6 +5,7 @@ import jwt, { JwtPayload, type Secret } from "jsonwebtoken";
 import path from "path";
 import { CatchAsyncErrors } from "../middleware/catchAsyncErrors";
 import userModel, { IUser } from "../models/userModel";
+import { findUserByEmail, getUserById } from "../services/userService";
 import ErrorHandler from "../utils/ErrorHandler";
 import {
     accessTokenOptions,
@@ -36,11 +37,13 @@ interface ILoginRequest {
     password: string;
 }
 
+type ISocialAuthBody = Omit<IRegistrationBody, "password">;
+
 export const registrationUser = CatchAsyncErrors(
     async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { name, email, password } = req.body;
-            const isEmailExist = await userModel.findOne({ email });
+            const isEmailExist = await findUserByEmail(email);
             if (isEmailExist) {
                 return next(new ErrorHandler("Email already exist", 400));
             }
@@ -94,7 +97,7 @@ export const activateUser = CatchAsyncErrors(
             }
 
             const { name, email, password } = newUser.user;
-            const existUser = await userModel.findOne({ email });
+            const existUser = await findUserByEmail(email);
 
             if (existUser) {
                 return next(new ErrorHandler("Email already exists", 400));
@@ -125,7 +128,7 @@ export const loginUser = CatchAsyncErrors(
                 );
             }
 
-            const user = await userModel.findOne({ email }).select("+password");
+            const user = await findUserByEmail(email, true);
             if (!user) {
                 return next(new ErrorHandler("Invalid email or password", 400));
             }
@@ -198,6 +201,38 @@ export const updateAccessToken = CatchAsyncErrors(
                 success: true,
                 accessToken,
             });
+        } catch (error: any) {
+            return next(new ErrorHandler(error.message, 400));
+        }
+    }
+);
+
+export const getUserInfo = CatchAsyncErrors(
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?._id;
+            const user = await getUserById(userId);
+            res.status(201).json({
+                success: true,
+                user,
+            });
+        } catch (error: any) {
+            return next(new ErrorHandler(error.message, 400));
+        }
+    }
+);
+
+export const socialAuth = CatchAsyncErrors(
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { email, name, avatar } = req.body as IRegistrationBody;
+            const user = await findUserByEmail(email);
+            if (!user) {
+                const newUser = await userModel.create({ name, email, avatar });
+                sendToken(newUser, 200, res);
+            } else {
+                sendToken(user, 200, res);
+            }
         } catch (error: any) {
             return next(new ErrorHandler(error.message, 400));
         }
