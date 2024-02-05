@@ -1,8 +1,7 @@
 require("dotenv").config();
-import ejs from "ejs";
+import cloudinary from "cloudinary";
 import { type NextFunction, type Request, type Response } from "express";
 import jwt, { JwtPayload, type Secret } from "jsonwebtoken";
-import path from "path";
 import { CatchAsyncErrors } from "../middleware/catchAsyncErrors";
 import userModel, { IUser } from "../models/userModel";
 import { findUserByEmail, getUserById } from "../services/userService";
@@ -39,6 +38,23 @@ interface ILoginRequest {
 
 type ISocialAuthBody = Omit<IRegistrationBody, "password">;
 
+interface IUpdateUserInfo {
+    name?: string;
+    email?: string;
+}
+
+interface IUpdatePassword {
+    oldPassword: string;
+    newPassword: string;
+}
+
+interface IUpdateProfilePicture {
+    avatar: {
+        public_id: string;
+        url: string;
+    };
+}
+
 export const registrationUser = CatchAsyncErrors(
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -56,10 +72,6 @@ export const registrationUser = CatchAsyncErrors(
             const activationToken = createActivationToken(user);
             const { activationCode, token } = activationToken;
             const data = { user: { name: user.name }, activationCode };
-            const html = await ejs.renderFile(
-                path.join(__dirname, "../mails/activationMail.ejs"),
-                data
-            );
 
             try {
                 await sendMail({
@@ -194,6 +206,8 @@ export const updateAccessToken = CatchAsyncErrors(
                 }
             );
 
+            req.user = user;
+
             res.cookie("access_token", accessToken, accessTokenOptions);
             res.cookie("refresh_token", refreshToken, refreshTokenOptions);
 
@@ -225,7 +239,7 @@ export const getUserInfo = CatchAsyncErrors(
 export const socialAuth = CatchAsyncErrors(
     async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { email, name, avatar } = req.body as IRegistrationBody;
+            const { email, name, avatar } = req.body as ISocialAuthBody;
             const user = await findUserByEmail(email);
             if (!user) {
                 const newUser = await userModel.create({ name, email, avatar });
@@ -233,6 +247,118 @@ export const socialAuth = CatchAsyncErrors(
             } else {
                 sendToken(user, 200, res);
             }
+        } catch (error: any) {
+            return next(new ErrorHandler(error.message, 400));
+        }
+    }
+);
+
+export const updateUserInfo = CatchAsyncErrors(
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { name, email } = req.body as IUpdateUserInfo;
+            const userId = req.user?._id;
+            const user = await getUserById(userId);
+            if (email && user) {
+                const isEmailExist = await findUserByEmail(email);
+                if (isEmailExist) {
+                    return next(new ErrorHandler("Email already exists", 400));
+                }
+                user.email = email;
+            }
+            if (name && user) user.name = name;
+
+            await user?.save();
+            await redis.set(userId, JSON.stringify(user));
+
+            res.status(201).json({
+                success: true,
+                user,
+            });
+        } catch (error: any) {
+            return next(new ErrorHandler(error.message, 400));
+        }
+    }
+);
+
+export const updatePassword = CatchAsyncErrors(
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { oldPassword, newPassword } = req.body as IUpdatePassword;
+            if (!oldPassword || !newPassword) {
+                return next(
+                    new ErrorHandler("Please enter old and new passwords", 400)
+                );
+            }
+
+            const user = await getUserById(req.user?._id, true);
+            if (!user?.password) {
+                return next(new ErrorHandler("Invalid user", 400));
+            }
+
+            const isPasswordMatch = await user?.comparePassword(oldPassword);
+            if (!isPasswordMatch) {
+                return next(new ErrorHandler("Invalid old password", 400));
+            }
+
+            user.password = newPassword;
+
+            await user.save();
+            await redis.set(req.user?._id, JSON.stringify(user));
+
+            res.status(201).json({
+                success: true,
+                user,
+            });
+        } catch (error: any) {
+            return next(new ErrorHandler(error.message, 400));
+        }
+    }
+);
+
+export const updateProfilePicture = CatchAsyncErrors(
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { avatar } = req.body;
+            const userId = req.user?._id;
+            const user = await getUserById(userId);
+
+            if (avatar && user) {
+                if (user?.avatar.public_id) {
+                    // Delete old image
+                    await cloudinary.v2.uploader.destroy(
+                        user?.avatar?.public_id
+                    );
+
+                    const myCloudinary = await cloudinary.v2.uploader.upload(
+                        avatar,
+                        {
+                            folder: "avatars",
+                            width: 150,
+                        }
+                    );
+                } else {
+                    const myCloudinary = await cloudinary.v2.uploader.upload(
+                        avatar,
+                        {
+                            folder: "avatars",
+                            width: 150,
+                        }
+                    );
+                    user.avatar = {
+                        public_id: myCloudinary.public_id,
+                        url: myCloudinary.secure_url,
+                    };
+                }
+            }
+
+            await user?.save();
+            await redis.set(userId, JSON.stringify(user));
+
+            res.status(201).json({
+                success: true,
+                user,
+            });
         } catch (error: any) {
             return next(new ErrorHandler(error.message, 400));
         }
