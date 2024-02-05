@@ -11,10 +11,41 @@ interface ITokenOptions {
     secure?: boolean;
 }
 
-const FALLBACK_ACCESS_TOKEN_EXPIRE = "300";
-const FALLBACK_REFRESH_TOKEN_EXPIRE = "1200";
-const MILLISECONDS_PER_MINUTES = 1000;
+const FALLBACK_ACCESS_TOKEN_EXPIRE = "300",
+    FALLBACK_REFRESH_TOKEN_EXPIRE = "1200";
+const MILLISECONDS_PER_SECOND = 1000,
+    SECONDS_PER_MINUTE = 60,
+    MINUTES_PER_HOUR = 60,
+    HOURS_PER_DAY = 24;
+const MILLISECONDS_PER_HOUR =
+    MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
+const MILLISECONDS_PER_DAY = HOURS_PER_DAY * MILLISECONDS_PER_HOUR;
 const RADIX = 10;
+
+// Parse env to integrates with fallback values
+const accessTokenExpire = parseInt(
+    process.env.ACCESS_TOKEN_EXPIRE || FALLBACK_ACCESS_TOKEN_EXPIRE,
+    RADIX
+);
+const refreshTokenExpire = parseInt(
+    process.env.REFRESH_TOKEN_EXPIRE || FALLBACK_REFRESH_TOKEN_EXPIRE,
+    RADIX
+);
+
+// Options for cookies
+export const accessTokenOptions: ITokenOptions = {
+    expires: new Date(Date.now() + accessTokenExpire * MILLISECONDS_PER_HOUR),
+    maxAge: accessTokenExpire * MILLISECONDS_PER_HOUR,
+    httpOnly: true,
+    sameSite: "lax",
+};
+
+export const refreshTokenOptions: ITokenOptions = {
+    expires: new Date(Date.now() + refreshTokenExpire * MILLISECONDS_PER_DAY),
+    maxAge: refreshTokenExpire * MILLISECONDS_PER_DAY,
+    httpOnly: true,
+    sameSite: "lax",
+};
 
 export const sendToken = (user: IUser, statusCode: number, res: Response) => {
     const accessToken = user.signAccessToken();
@@ -22,35 +53,6 @@ export const sendToken = (user: IUser, statusCode: number, res: Response) => {
 
     // Upload session to redis
     redis.set(user._id, JSON.stringify(user));
-
-    // Parse env to integrates with fallback values
-    const accessTokenExpire = parseInt(
-        process.env.ACCESS_TOKEN_EXPIRE || FALLBACK_ACCESS_TOKEN_EXPIRE,
-        RADIX
-    );
-    const refreshTokenExpire = parseInt(
-        process.env.REFRESH_TOKEN_EXPIRE || FALLBACK_REFRESH_TOKEN_EXPIRE,
-        RADIX
-    );
-
-    // Options for cookies
-    const accessTokenOptions: ITokenOptions = {
-        expires: new Date(
-            Date.now() + accessTokenExpire * MILLISECONDS_PER_MINUTES
-        ),
-        maxAge: accessTokenExpire * MILLISECONDS_PER_MINUTES,
-        httpOnly: true,
-        sameSite: "lax",
-    };
-
-    const refreshTokenOptions: ITokenOptions = {
-        expires: new Date(
-            Date.now() + refreshTokenExpire * MILLISECONDS_PER_MINUTES
-        ),
-        maxAge: refreshTokenExpire * MILLISECONDS_PER_MINUTES,
-        httpOnly: true,
-        sameSite: "lax",
-    };
 
     // Only set secure to true in production
     if (process.env.NODE_ENV === "production") {
