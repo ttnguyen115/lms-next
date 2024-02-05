@@ -9,6 +9,11 @@ export const findUserByEmail = async (
         : await userModel.findOne({ email });
 };
 
-export const getUserById = async (id: string) => {
-    return await userModel.findById(id);
+export const getUserById = async (
+    id: string,
+    isSelectPassword: boolean = false
+) => {
+    return isSelectPassword
+        ? await userModel.findById(id).select("+password")
+        : await userModel.findById(id);
 };
