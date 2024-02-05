@@ -6,6 +6,7 @@ import path from "path";
 import { CatchAsyncErrors } from "../middleware/catchAsyncErrors";
 import userModel, { IUser } from "../models/userModel";
 import ErrorHandler from "../utils/ErrorHandler";
+import { sendToken } from "../utils/jwt";
 import sendMail from "../utils/sendMail";
 
 interface IRegistrationBody {
@@ -23,6 +24,11 @@ interface IActivationToken {
 interface IActivationRequest {
     activation_token: string;
     activation_code: string;
+}
+
+interface ILoginRequest {
+    email: string;
+    password: string;
 }
 
 export const registrationUser = CatchAsyncErrors(
@@ -97,6 +103,48 @@ export const activateUser = CatchAsyncErrors(
 
             res.status(201).json({
                 success: true,
+            });
+        } catch (error: any) {
+            return next(new ErrorHandler(error.message, 400));
+        }
+    }
+);
+
+export const loginUser = CatchAsyncErrors(
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { email, password } = req.body as ILoginRequest;
+            if (!email || !password) {
+                return next(
+                    new ErrorHandler("Please enter email and password", 400)
+                );
+            }
+
+            const user = await userModel.findOne({ email }).select("+password");
+            if (!user) {
+                return next(new ErrorHandler("Invalid email or password", 400));
+            }
+
+            const isPasswordMatch = await user.comparePassword(password);
+            if (!isPasswordMatch) {
+                return next(new ErrorHandler("Password is incorrect", 400));
+            }
+
+            sendToken(user, 200, res);
+        } catch (error: any) {
+            return next(new ErrorHandler(error.message, 400));
+        }
+    }
+);
+
+export const logoutUser = CatchAsyncErrors(
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            res.cookie("access_token", "", { maxAge: 1 });
+            res.cookie("refresh_token", "", { maxAge: 1 });
+            res.status(200).json({
+                success: true,
+                message: "Logged out successfully",
             });
         } catch (error: any) {
             return next(new ErrorHandler(error.message, 400));
