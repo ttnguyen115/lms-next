@@ -1,16 +1,15 @@
 require("dotenv").config();
 import cloudinary from "cloudinary";
+import ejs from "ejs";
 import { type NextFunction, type Request, type Response } from "express";
 import jwt, { JwtPayload, type Secret } from "jsonwebtoken";
+import path from "path";
+
 import { CatchAsyncErrors } from "../middleware/catchAsyncErrors";
 import userModel, { IUser } from "../models/userModel";
 import { findUserByEmail, getUserById } from "../services/userService";
 import ErrorHandler from "../utils/ErrorHandler";
-import {
-    accessTokenOptions,
-    refreshTokenOptions,
-    sendToken,
-} from "../utils/jwt";
+import { accessTokenOptions, refreshTokenOptions, sendToken } from "../utils/jwt";
 import { redis } from "../utils/redis";
 import sendMail from "../utils/sendMail";
 
@@ -72,6 +71,10 @@ export const registrationUser = CatchAsyncErrors(
             const activationToken = createActivationToken(user);
             const { activationCode, token } = activationToken;
             const data = { user: { name: user.name }, activationCode };
+            const html = await ejs.renderFile(
+                path.join(__dirname, "../mails/activationMail.ejs"),
+                data
+            );
 
             try {
                 await sendMail({
@@ -97,8 +100,7 @@ export const registrationUser = CatchAsyncErrors(
 export const activateUser = CatchAsyncErrors(
     async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { activation_token, activation_code } =
-                req.body as IActivationRequest;
+            const { activation_token, activation_code } = req.body as IActivationRequest;
             const newUser: { user: IUser; activationCode: string } = jwt.verify(
                 activation_token,
                 process.env.ACTIVATION_SECRET as string
@@ -135,9 +137,7 @@ export const loginUser = CatchAsyncErrors(
         try {
             const { email, password } = req.body as ILoginRequest;
             if (!email || !password) {
-                return next(
-                    new ErrorHandler("Please enter email and password", 400)
-                );
+                return next(new ErrorHandler("Please enter email and password", 400));
             }
 
             const user = await findUserByEmail(email, true);
@@ -191,20 +191,12 @@ export const updateAccessToken = CatchAsyncErrors(
             if (!session) return next(tokenError);
 
             const user = JSON.parse(session);
-            const accessToken = jwt.sign(
-                { id: user._id },
-                process.env.ACCESS_TOKEN as string,
-                {
-                    expiresIn: "5m",
-                }
-            );
-            const refreshToken = jwt.sign(
-                { id: user._id },
-                process.env.REFRESH_TOKEN as string,
-                {
-                    expiresIn: "3d",
-                }
-            );
+            const accessToken = jwt.sign({ id: user._id }, process.env.ACCESS_TOKEN as string, {
+                expiresIn: "5m",
+            });
+            const refreshToken = jwt.sign({ id: user._id }, process.env.REFRESH_TOKEN as string, {
+                expiresIn: "3d",
+            });
 
             req.user = user;
 
@@ -286,9 +278,7 @@ export const updatePassword = CatchAsyncErrors(
         try {
             const { oldPassword, newPassword } = req.body as IUpdatePassword;
             if (!oldPassword || !newPassword) {
-                return next(
-                    new ErrorHandler("Please enter old and new passwords", 400)
-                );
+                return next(new ErrorHandler("Please enter old and new passwords", 400));
             }
 
             const user = await getUserById(req.user?._id, true);
@@ -326,25 +316,17 @@ export const updateProfilePicture = CatchAsyncErrors(
             if (avatar && user) {
                 if (user?.avatar.public_id) {
                     // Delete old image
-                    await cloudinary.v2.uploader.destroy(
-                        user?.avatar?.public_id
-                    );
+                    await cloudinary.v2.uploader.destroy(user?.avatar?.public_id);
 
-                    const myCloudinary = await cloudinary.v2.uploader.upload(
-                        avatar,
-                        {
-                            folder: "avatars",
-                            width: 150,
-                        }
-                    );
+                    const myCloudinary = await cloudinary.v2.uploader.upload(avatar, {
+                        folder: "avatars",
+                        width: 150,
+                    });
                 } else {
-                    const myCloudinary = await cloudinary.v2.uploader.upload(
-                        avatar,
-                        {
-                            folder: "avatars",
-                            width: 150,
-                        }
-                    );
+                    const myCloudinary = await cloudinary.v2.uploader.upload(avatar, {
+                        folder: "avatars",
+                        width: 150,
+                    });
                     user.avatar = {
                         public_id: myCloudinary.public_id,
                         url: myCloudinary.secure_url,
@@ -365,16 +347,10 @@ export const updateProfilePicture = CatchAsyncErrors(
     }
 );
 
-export const createActivationToken = (
-    user: IRegistrationBody
-): IActivationToken => {
+export const createActivationToken = (user: IRegistrationBody): IActivationToken => {
     const activationCode = Math.floor(1000 + Math.random() * 9000).toString();
-    const token = jwt.sign(
-        { user, activationCode },
-        process.env.ACTIVATION_SECRET as Secret,
-        {
-            expiresIn: "5m",
-        }
-    );
+    const token = jwt.sign({ user, activationCode }, process.env.ACTIVATION_SECRET as Secret, {
+        expiresIn: "5m",
+    });
     return { token, activationCode };
 };
