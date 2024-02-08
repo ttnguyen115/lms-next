@@ -132,3 +132,33 @@ export const getAllCoursesWithoutPurchasing = CatchAsyncErrors(
         }
     }
 );
+
+export const getCourseByValidUser = CatchAsyncErrors(
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userCourses = req.user?.courses;
+            const courseId = req.params.id;
+            const isCourseExists = userCourses?.find(
+                (course: any) => course._id.toString() === courseId
+            );
+            if (!isCourseExists) {
+                return next(
+                    new ErrorHandler(
+                        "You are not eligible to access this course",
+                        404
+                    )
+                );
+            }
+
+            const course = await findCourseById(courseId);
+            const content = course?.courseData;
+
+            res.status(200).json({
+                success: true,
+                content,
+            });
+        } catch (error: any) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    }
+);
