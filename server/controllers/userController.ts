@@ -6,8 +6,8 @@ import jwt, { JwtPayload, type Secret } from "jsonwebtoken";
 import path from "path";
 
 import { CatchAsyncErrors } from "../middleware/catchAsyncErrors";
-import userModel, { IUser } from "../models/userModel";
-import { findUserByEmail, getUserById } from "../services/userService";
+import UserModel, { IUser } from "../models/userModel";
+import { findUserByEmail, findUserById } from "../services/userService";
 import ErrorHandler from "../utils/ErrorHandler";
 import { accessTokenOptions, refreshTokenOptions, sendToken } from "../utils/jwt";
 import { redis } from "../utils/redis";
@@ -117,7 +117,7 @@ export const activateUser = CatchAsyncErrors(
                 return next(new ErrorHandler("Email already exists", 400));
             }
 
-            const user = await userModel.create({
+            const user = await UserModel.create({
                 name,
                 email,
                 password,
@@ -217,7 +217,7 @@ export const getUserInfo = CatchAsyncErrors(
     async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?._id;
-            const user = await getUserById(userId);
+            const user = await findUserById(userId);
             res.status(201).json({
                 success: true,
                 user,
@@ -234,7 +234,7 @@ export const socialAuth = CatchAsyncErrors(
             const { email, name, avatar } = req.body as ISocialAuthBody;
             const user = await findUserByEmail(email);
             if (!user) {
-                const newUser = await userModel.create({ name, email, avatar });
+                const newUser = await UserModel.create({ name, email, avatar });
                 sendToken(newUser, 200, res);
             } else {
                 sendToken(user, 200, res);
@@ -250,7 +250,7 @@ export const updateUserInfo = CatchAsyncErrors(
         try {
             const { name, email } = req.body as IUpdateUserInfo;
             const userId = req.user?._id;
-            const user = await getUserById(userId);
+            const user = await findUserById(userId);
             if (email && user) {
                 const isEmailExist = await findUserByEmail(email);
                 if (isEmailExist) {
@@ -281,7 +281,7 @@ export const updatePassword = CatchAsyncErrors(
                 return next(new ErrorHandler("Please enter old and new passwords", 400));
             }
 
-            const user = await getUserById(req.user?._id, true);
+            const user = await findUserById(req.user?._id, true);
             if (!user?.password) {
                 return next(new ErrorHandler("Invalid user", 400));
             }
@@ -311,7 +311,7 @@ export const updateProfilePicture = CatchAsyncErrors(
         try {
             const { avatar } = req.body;
             const userId = req.user?._id;
-            const user = await getUserById(userId);
+            const user = await findUserById(userId);
 
             if (avatar && user) {
                 if (user?.avatar.public_id) {
