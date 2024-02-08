@@ -40,12 +40,12 @@ interface ICourse extends Document {
     tags: string;
     level: string;
     demoUrl: string;
-    benefits: { title: string; }[];
-    prerequisites: { title: string; }[];
+    benefits: { title: string }[];
+    prerequisites: { title: string }[];
     courseData: ICourseData[];
     reviews: IReview[];
     ratings?: number;
-    purchased?: number; 
+    purchased?: number;
 }
 
 const reviewSchema = new Schema<IReview>({
@@ -54,32 +54,31 @@ const reviewSchema = new Schema<IReview>({
         type: Number,
         default: 0,
     },
-    comment: String
+    comment: String,
 });
 
 const linkSchema = new Schema<ILink>({
     title: String,
     url: String,
-})
+});
 
 const commentSchema = new Schema<IComment>({
     user: Object,
     comment: String,
     commentReplies: [Object],
-})
+});
 
 const courseDataSchema = new Schema<ICourseData>({
     title: String,
     description: String,
     videoUrl: String,
-    videoThumbnail: Object,
     videoSection: String,
     videoLength: Number,
     videoPlayer: String,
     links: [linkSchema],
     suggestion: String,
     questions: [commentSchema],
-})
+});
 
 const courseSchema = new Schema<ICourse>({
     name: {
@@ -88,7 +87,7 @@ const courseSchema = new Schema<ICourse>({
     },
     description: {
         type: String,
-        required: true
+        required: true,
     },
     price: {
         type: Number,
@@ -100,20 +99,18 @@ const courseSchema = new Schema<ICourse>({
     thumbnail: {
         public_id: {
             type: String,
-            required: true
         },
         url: {
             type: String,
-            required: true
         },
     },
     tags: {
         type: String,
-        required: true
+        required: true,
     },
     level: {
         type: String,
-        required: true
+        required: true,
     },
     demoUrl: {
         type: String,
@@ -130,8 +127,8 @@ const courseSchema = new Schema<ICourse>({
     purchased: {
         type: Number,
         default: 0,
-    }
-})
+    },
+});
 
 const CourseModel: Model<ICourse> = mongoose.model("Course", courseSchema);
 
