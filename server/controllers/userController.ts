@@ -60,6 +60,8 @@ interface IUpdateProfilePicture {
     };
 }
 
+const MILLISECONDS_BY_7_DAYS = 604800;
+
 export const registrationUser = CatchAsyncErrors(
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -190,7 +192,7 @@ export const updateAccessToken = CatchAsyncErrors(
                 refresh_token,
                 process.env.REFRESH_TOKEN as string
             ) as JwtPayload;
-            const tokenError = new ErrorHandler("Could not refresh token", 400);
+            const tokenError = new ErrorHandler("Please login to access this resource", 400);
             if (!decoded) return next(tokenError);
 
             const session = await redis.get(decoded.id as string);
@@ -208,6 +210,8 @@ export const updateAccessToken = CatchAsyncErrors(
 
             res.cookie("access_token", accessToken, accessTokenOptions);
             res.cookie("refresh_token", refreshToken, refreshTokenOptions);
+
+            await redis.set(user._id, JSON.stringify(user), "EX", MILLISECONDS_BY_7_DAYS);
 
             res.status(200).json({
                 success: true,

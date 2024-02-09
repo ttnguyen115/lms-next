@@ -42,6 +42,8 @@ interface IAddReplyToReviewData {
     reviewId: string;
 }
 
+const MILLISECONDS_BY_7_DAYS = 604800;
+
 export const uploadCourse = CatchAsyncErrors(
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -118,7 +120,7 @@ export const getSingleCourseWithoutPurchasing = CatchAsyncErrors(
                     "-courseData.videoUrl -courseData.suggestions -courseData.questions -courseData.links"
                 );
 
-                await redis.set(courseId, JSON.stringify(course));
+                await redis.set(courseId, JSON.stringify(course), "EX", MILLISECONDS_BY_7_DAYS);
 
                 res.status(200).json({
                     success: true,
