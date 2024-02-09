@@ -7,7 +7,7 @@ import path from "path";
 
 import { CatchAsyncErrors } from "../middleware/catchAsyncErrors";
 import UserModel, { IUser } from "../models/userModel";
-import { findUserByEmail, findUserById } from "../services/userService";
+import { findAllUsers, findUserByEmail, findUserById } from "../services/userService";
 import ErrorHandler from "../utils/ErrorHandler";
 import { accessTokenOptions, refreshTokenOptions, sendToken } from "../utils/jwt";
 import { redis } from "../utils/redis";
@@ -340,6 +340,21 @@ export const updateProfilePicture = CatchAsyncErrors(
             res.status(201).json({
                 success: true,
                 user,
+            });
+        } catch (error: any) {
+            return next(new ErrorHandler(error.message, 400));
+        }
+    }
+);
+
+// Admin only
+export const getAllUsers = CatchAsyncErrors(
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const users = await findAllUsers();
+            res.status(200).json({
+                success: true,
+                users,
             });
         } catch (error: any) {
             return next(new ErrorHandler(error.message, 400));
