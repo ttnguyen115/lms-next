@@ -6,6 +6,7 @@ import { CatchAsyncErrors } from "../middleware/catchAsyncErrors";
 import NotificationModel from "../models/notificationModel";
 import {
     createCourse,
+    deleteCourseById,
     findCourseById,
     findCourseByIdAndUpdate,
     findCourses,
@@ -391,6 +392,29 @@ export const getAllCourses = CatchAsyncErrors(
             res.status(200).json({
                 success: true,
                 courses,
+            });
+        } catch (error: any) {
+            return next(new ErrorHandler(error.message, 400));
+        }
+    }
+);
+
+// Admin only
+export const deleteCourse = CatchAsyncErrors(
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { id } = req.params;
+            const course = await findCourseById(id);
+            if (!course) {
+                return next(new ErrorHandler("Course not found", 404));
+            }
+
+            await deleteCourseById(id);
+            await redis.del(id);
+
+            res.status(200).json({
+                success: true,
+                message: "Course deleted successfully",
             });
         } catch (error: any) {
             return next(new ErrorHandler(error.message, 400));

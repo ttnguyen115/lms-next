@@ -21,7 +21,9 @@ export const findCourseById = async (courseId: string, select: string = "") => {
 };
 
 export const findCourses = async (select: string = "") => {
-    return select.length > 0
-        ? await CourseModel.find().select(select)
-        : await CourseModel.find();
+    return select.length > 0 ? await CourseModel.find().select(select) : await CourseModel.find();
+};
+
+export const deleteCourseById = async (id: string) => {
+    return await CourseModel.findOneAndDelete({ _id: id });
 };
