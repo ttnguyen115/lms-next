@@ -3,7 +3,13 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { ErrorMiddleware } from "./middleware/error";
-import { courseRouter, notificationRouter, orderRouter, userRouter } from "./routes";
+import {
+    analyticsRouter,
+    courseRouter,
+    notificationRouter,
+    orderRouter,
+    userRouter,
+} from "./routes";
 
 export const app = express();
 
@@ -16,7 +22,7 @@ app.use(
 );
 
 // Routes
-app.use("/api/v1", userRouter, courseRouter, orderRouter, notificationRouter);
+app.use("/api/v1", userRouter, courseRouter, orderRouter, notificationRouter, analyticsRouter);
 
 // Checking API health
 app.get("/health", (req: Request, res: Response, next: NextFunction) => {
