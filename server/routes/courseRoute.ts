@@ -5,6 +5,7 @@ import {
     addReplyToReview,
     addReview,
     editCourse,
+    getAllCourses,
     getAllCoursesWithoutPurchasing,
     getCourseByValidUser,
     getSingleCourseWithoutPurchasing,
@@ -18,6 +19,8 @@ courseRouter.post("/create-course", isAuthenticated, authorizeRoles("admin"), up
 courseRouter.post("/edit-course/:id", isAuthenticated, authorizeRoles("admin"), editCourse);
 
 courseRouter.get("/course/:id", getSingleCourseWithoutPurchasing);
+
+courseRouter.get("/get-courses", isAuthenticated, authorizeRoles("admin"), getAllCourses);
 
 courseRouter.get("/course", getAllCoursesWithoutPurchasing);
 

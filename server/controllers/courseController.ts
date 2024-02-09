@@ -3,6 +3,7 @@ import ejs from "ejs";
 import { type NextFunction, type Request, type Response } from "express";
 import path from "path";
 import { CatchAsyncErrors } from "../middleware/catchAsyncErrors";
+import NotificationModel from "../models/notificationModel";
 import {
     createCourse,
     findCourseById,
@@ -205,6 +206,12 @@ export const addQuestion = CatchAsyncErrors(
             };
             courseContent.questions.push(newQuestion);
 
+            await NotificationModel.create({
+                user: req.user?._id,
+                title: "New Question Received",
+                message: `You have a new question in ${courseContent.title}`,
+            });
+
             await course?.save();
 
             res.status(200).json({
@@ -249,7 +256,11 @@ export const addAnswer = CatchAsyncErrors(
             await course?.save();
 
             if (req.user?._id === question.user._id) {
-                // TODO: Create a notification
+                await NotificationModel.create({
+                    user: req.user?._id,
+                    title: "New Question Reply Received",
+                    message: `You have a new question reply in ${courseContent.title}`,
+                });
             } else {
                 const data = {
                     name: question.user.name,
@@ -314,12 +325,11 @@ export const addReview = CatchAsyncErrors(
             }
 
             await course?.save();
-
-            const notification: any = {
+            await NotificationModel.create({
+                user: req.user?._id,
                 title: "New Review Received",
                 message: `${req.user?.name} has given a review in ${course?.name}`,
-            };
-            // TODO: implement a notification
+            });
 
             res.status(200).json({
                 success: true,
@@ -357,6 +367,11 @@ export const addReplyToReview = CatchAsyncErrors(
             review.commentReplies?.push(replyData);
 
             await course?.save();
+            await NotificationModel.create({
+                user: req.user?._id,
+                title: "New Review Reply Received",
+                message: `${req.user?.name} has given a review in ${course?.name}`,
+            });
 
             res.status(200).json({
                 success: true,
@@ -364,6 +379,21 @@ export const addReplyToReview = CatchAsyncErrors(
             });
         } catch (error: any) {
             return next(new ErrorHandler(error.message, 500));
+        }
+    }
+);
+
+// Admin only
+export const getAllCourses = CatchAsyncErrors(
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const courses = await findCourses();
+            res.status(200).json({
+                success: true,
+                courses,
+            });
+        } catch (error: any) {
+            return next(new ErrorHandler(error.message, 400));
         }
     }
 );

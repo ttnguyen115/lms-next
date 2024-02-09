@@ -5,7 +5,7 @@ import { CatchAsyncErrors } from "../middleware/catchAsyncErrors";
 import NotificationModel from "../models/notificationModel";
 import { IOrder } from "../models/orderModel";
 import { findCourseById } from "../services/courseService";
-import { newOrder } from "../services/orderService";
+import { findAllOrders, newOrder } from "../services/orderService";
 import { findUserById } from "../services/userService";
 import ErrorHandler from "../utils/ErrorHandler";
 import sendMail from "../utils/sendMail";
@@ -77,6 +77,21 @@ export const createOrder = CatchAsyncErrors(
             res.status(201).json({
                 success: true,
                 order,
+            });
+        } catch (error: any) {
+            return next(new ErrorHandler(error.message, 500));
+        }
+    }
+);
+
+// Admin only
+export const getAllOrders = CatchAsyncErrors(
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const orders = await findAllOrders();
+            res.status(200).json({
+                success: true,
+                orders,
             });
         } catch (error: any) {
             return next(new ErrorHandler(error.message, 500));
