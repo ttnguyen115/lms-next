@@ -7,7 +7,13 @@ import path from "path";
 
 import { CatchAsyncErrors } from "../middleware/catchAsyncErrors";
 import UserModel, { IUser } from "../models/userModel";
-import { findAllUsers, findUserByEmail, findUserById } from "../services/userService";
+import {
+    deleteUserById,
+    findAllUsers,
+    findUserByEmail,
+    findUserById,
+    updateUserRoleById,
+} from "../services/userService";
 import ErrorHandler from "../utils/ErrorHandler";
 import { accessTokenOptions, refreshTokenOptions, sendToken } from "../utils/jwt";
 import { redis } from "../utils/redis";
@@ -355,6 +361,45 @@ export const getAllUsers = CatchAsyncErrors(
             res.status(200).json({
                 success: true,
                 users,
+            });
+        } catch (error: any) {
+            return next(new ErrorHandler(error.message, 400));
+        }
+    }
+);
+
+// Admin only
+export const updateUserRole = CatchAsyncErrors(
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { id, role } = req.body;
+            const user = await updateUserRoleById(id, role);
+            res.status(201).json({
+                success: true,
+                user,
+            });
+        } catch (error: any) {
+            return next(new ErrorHandler(error.message, 400));
+        }
+    }
+);
+
+// Admin only
+export const deleteUser = CatchAsyncErrors(
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { id } = req.params;
+            const user = await findUserById(id);
+            if (!user) {
+                return next(new ErrorHandler("User not found", 404));
+            }
+
+            await deleteUserById(id);
+            await redis.del(id);
+
+            res.status(200).json({
+                success: true,
+                message: "User deleted successfully",
             });
         } catch (error: any) {
             return next(new ErrorHandler(error.message, 400));
