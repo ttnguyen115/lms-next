@@ -6,6 +6,7 @@ import { ErrorMiddleware } from "./middleware/error";
 import {
     analyticsRouter,
     courseRouter,
+    layoutRouter,
     notificationRouter,
     orderRouter,
     userRouter,
@@ -22,7 +23,15 @@ app.use(
 );
 
 // Routes
-app.use("/api/v1", userRouter, courseRouter, orderRouter, notificationRouter, analyticsRouter);
+app.use(
+    "/api/v1",
+    userRouter,
+    courseRouter,
+    orderRouter,
+    notificationRouter,
+    analyticsRouter,
+    layoutRouter
+);
 
 // Checking API health
 app.get("/health", (req: Request, res: Response, next: NextFunction) => {
