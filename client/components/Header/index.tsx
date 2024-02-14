@@ -1,4 +1,8 @@
-import { NavItems, ThemeSwitcher } from "@/components";
+"use client";
+
+import { CustomModal, NavItems, ThemeSwitcher } from "@/components";
+import { Login } from "@/components/Auth";
+import { APP_ROUTES } from "@/constants";
 import clsx from "clsx";
 import Link from "next/link";
 import React from "react";
@@ -8,9 +12,11 @@ type HeaderProps = {
     open: boolean;
     setOpen: (open: boolean) => void;
     activeItem: number;
+    setRoute: (route: string) => void;
+    route: string;
 };
 
-function Header({ open, setOpen, activeItem }: Readonly<HeaderProps>) {
+function Header({ open, setOpen, activeItem, setRoute, route }: Readonly<HeaderProps>) {
     const [active, setActive] = React.useState(false);
     const [openSidebar, setOpenSidebar] = React.useState(false);
 
@@ -85,6 +91,19 @@ function Header({ open, setOpen, activeItem }: Readonly<HeaderProps>) {
                 </div>
                 {openSidebar && mobileSidebar()}
             </div>
+            {route === APP_ROUTES.LOGIN && (
+                <>
+                    {open && (
+                        <CustomModal
+                            open={open}
+                            setOpen={setOpen}
+                            setRoute={setRoute}
+                            activeItem={activeItem}
+                            component={Login}
+                        />
+                    )}
+                </>
+            )}
         </div>
     );
 }
