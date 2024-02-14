@@ -1,7 +1,7 @@
 "use client";
 
 import { CustomModal, NavItems, ThemeSwitcher } from "@/components";
-import { Login } from "@/components/Auth";
+import { Login, SignUp, Verification } from "@/components/Auth";
 import { APP_ROUTES } from "@/constants";
 import clsx from "clsx";
 import Link from "next/link";
@@ -22,7 +22,7 @@ function Header({ open, setOpen, activeItem, setRoute, route }: Readonly<HeaderP
 
     if (typeof window !== "undefined") {
         window.addEventListener("scroll", () => {
-            if (window.scrollY > 80) {
+            if (window.scrollY > 85) {
                 setActive(true);
             } else {
                 setActive(false);
@@ -100,6 +100,32 @@ function Header({ open, setOpen, activeItem, setRoute, route }: Readonly<HeaderP
                             setRoute={setRoute}
                             activeItem={activeItem}
                             component={Login}
+                        />
+                    )}
+                </>
+            )}
+            {route === APP_ROUTES.SIGN_UP && (
+                <>
+                    {open && (
+                        <CustomModal
+                            open={open}
+                            setOpen={setOpen}
+                            setRoute={setRoute}
+                            activeItem={activeItem}
+                            component={SignUp}
+                        />
+                    )}
+                </>
+            )}
+            {route === APP_ROUTES.VERIFICATION && (
+                <>
+                    {open && (
+                        <CustomModal
+                            open={open}
+                            setOpen={setOpen}
+                            setRoute={setRoute}
+                            activeItem={activeItem}
+                            component={Verification}
                         />
                     )}
                 </>

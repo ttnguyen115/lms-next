@@ -14,44 +14,63 @@ type Props = {
 };
 
 const schema = yup.object().shape({
+    name: yup.string().required("Please enter your name!"),
     email: yup.string().email("Invalid email!").required("Please enter your email!"),
     password: yup.string().required("Please enter your password!").min(6),
 });
 
-const Login: React.FC<Props> = ({ setRoute }) => {
+const SignUp: React.FC<Props> = ({ setRoute }) => {
     const [show, setShow] = React.useState(false);
 
     const { errors, touched, values, handleChange, handleSubmit } = useFormik({
-        initialValues: { email: "", password: "" },
+        initialValues: { name: "", email: "", password: "" },
         validationSchema: schema,
         onSubmit: async ({ email, password }) => {
-            console.log({ email, password });
+            setRoute(APP_ROUTES.VERIFICATION);
         },
     });
 
     return (
         <div className="w-full">
-            <h1 className={styles.title}>Login with E-Learning</h1>
+            <h1 className={styles.title}>Join to E-Learning</h1>
             <form onSubmit={handleSubmit}>
-                <label htmlFor="email" className={styles.label}>
-                    Enter your Email
-                </label>
-                <input
-                    type="email"
-                    name=""
-                    id="email"
-                    value={values.email}
-                    onChange={handleChange}
-                    placeholder="loginmail@gmail.com"
-                    className={clsx(
-                        styles.input,
-                        "rounded",
-                        errors.email && touched.email && styles.error
+                <div className="mb-3">
+                    <label htmlFor="name" className={styles.label}>
+                        Enter your Name
+                    </label>
+                    <input
+                        type="text"
+                        name="name"
+                        id="name"
+                        value={values.name}
+                        onChange={handleChange}
+                        placeholder="Mike"
+                        className={clsx(styles.input, errors.name && touched.name && styles.error)}
+                    />
+                    {errors.name && touched.name && (
+                        <span className="text-red-500 pt-2 block">{errors.name}</span>
                     )}
-                />
-                {errors.email && touched.email && (
-                    <span className="text-red-500 pt-2 block">{errors.email}</span>
-                )}
+                </div>
+                <div>
+                    <label htmlFor="email" className={styles.label}>
+                        Enter your Email
+                    </label>
+                    <input
+                        type="email"
+                        name=""
+                        id="email"
+                        value={values.email}
+                        onChange={handleChange}
+                        placeholder="SignUpmail@gmail.com"
+                        className={clsx(
+                            styles.input,
+                            errors.email && touched.email && styles.error
+                        )}
+                    />
+                    {errors.email && touched.email && (
+                        <span className="text-red-500 pt-2 block">{errors.email}</span>
+                    )}
+                </div>
                 <div className="w-full mt-5 relative mb-1">
                     <label htmlFor="password" className={styles.label}>
                         Enter your Password
@@ -86,7 +105,7 @@ const Login: React.FC<Props> = ({ setRoute }) => {
                     )}
                 </div>
                 <div className="w-full mt-5">
-                    <input type="submit" value="Log In" className={styles.button} />
+                    <input type="submit" value="Sign Up" className={styles.button} />
                 </div>
                 <br />
                 <h5 className="text-center pt-4 font-Poppins text-[14px] text-black dark:text-white">
@@ -97,12 +116,12 @@ const Login: React.FC<Props> = ({ setRoute }) => {
                     <AiFillGithub size={30} className="cursor-pointer ml-2" />
                 </div>
                 <h5>
-                    Not have any accounts?{" "}
+                    Already have an account?{" "}
                     <span
                         className="text-[#2190ff] pl-1 cursor-pointer"
-                        onClick={() => setRoute(APP_ROUTES.SIGN_UP)}
+                        onClick={() => setRoute(APP_ROUTES.LOGIN)}
                     >
-                        Sign Up
+                        Log In
                     </span>
                 </h5>
             </form>
@@ -110,4 +129,4 @@ const Login: React.FC<Props> = ({ setRoute }) => {
     );
 };
 
-export default Login;
+export default SignUp;
